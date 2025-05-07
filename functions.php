@@ -248,3 +248,22 @@ add_action('wp_ajax_st_partner_approve_booking', function() {
     ));
     die;
 }, 1); // Priorité 1 pour s'exécuter avant la fonction originale
+
+// Force l'approbation automatique des réservations d'activités
+add_action('st_booking_change_status', function($status, $order_id, $gateway_id) {
+    // Vérifier si c'est une activité
+    $item_id = get_post_meta($order_id, 'item_id', true);
+    if (get_post_type($item_id) === 'st_activity') {
+        // Mettre à jour le statut en "complete"
+        update_post_meta($order_id, 'status', 'complete');
+        
+        // Mettre à jour la table st_order_item_meta
+        global $wpdb;
+        $table = $wpdb->prefix . 'st_order_item_meta';
+        $query = "UPDATE {$table} SET status='complete' where order_item_id={$order_id}";
+        $wpdb->query($query);
+        
+        // Envoyer l'email de confirmation
+        STCart::send_mail_after_booking($order_id, true, true);
+    }
+}, 10, 3);
