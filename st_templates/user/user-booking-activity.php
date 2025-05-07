@@ -200,14 +200,30 @@ if (STInput::get('scaction') == 'email-notification') {
                                 $status_text = $status_string;
                         }
                         echo '<span class="suser-status"><span style="color: ' . esc_attr( $status_color ) . '">' . esc_html( $status_text ) . '</span></span>';
+                        
+                        // Afficher le bouton d'approbation pour les réservations en attente
                         if (
                             ($status == 'incomplete' || $status == 'pending' || $status == 'wc-processing' || $status == 'wc-on-hold')
-                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles) // IA Changed it
+                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles)
                         ) {
                             ?>
-<!--                            <a data-post-id="--><?php //echo esc_attr($value->id); ?><!--" data-order-id="--><?php //echo esc_attr($value->order_item_id); ?><!--" href="#" class="suser-approve"> IA changed it....-->
                             <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#" class="suser-approve"><?php echo __('Approve', 'traveler'); ?> </a>
                             <div class="suser-message"><div class="spinner"></div></div>
+                        <?php } ?>
+                        
+                        <!-- Afficher le bouton d'annulation pour les réservations complétées -->
+                        <?php
+                        $item_id = $value->st_booking_id;
+                        $is_admin = current_user_can('administrator');
+                        $is_partner = in_array('partner', wp_get_current_user()->roles) || in_array('st_partner', wp_get_current_user()->roles);
+                        $is_owner = get_post_field('post_author', $item_id) == get_current_user_id();
+                        
+                        if (($is_admin || ($is_partner && $is_owner)) && 
+                            ($status == 'complete' || $status == 'wc-completed') && 
+                            $status != 'cancelled' && 
+                            $status != 'wc-cancelled') {
+                            ?>
+                            <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#" class="suser-cancel"><?php echo __('Cancel', 'traveler'); ?> </a>
                         <?php } ?>
                     </td>
                     <td class="">

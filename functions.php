@@ -267,3 +267,140 @@ add_action('st_booking_change_status', function($status, $order_id, $gateway_id)
         STCart::send_mail_after_booking($order_id, true, true);
     }
 }, 10, 3);
+
+// Ajouter le JavaScript pour gérer l'annulation
+add_action('wp_footer', function() {
+    ?>
+    <script>
+    jQuery(document).ready(function($) {
+        $('.suser-cancel').click(function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            var post_id = $this.data('post-id');
+            var order_id = $this.data('order-id');
+            var $message = $this.siblings('.suser-message');
+            
+            if (confirm('<?php echo esc_js(__('Are you sure you want to cancel this booking?', 'traveler')); ?>')) {
+                $message.find('.spinner').show();
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'st_partner_cancel_booking',
+                        security: '<?php echo wp_create_nonce("st_frontend_security"); ?>',
+                        post_id: post_id,
+                        order_id: order_id
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php echo esc_js(__('An error occurred', 'traveler')); ?>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                        alert('<?php echo esc_js(__('An error occurred. Please try again.', 'traveler')); ?>');
+                    },
+                    complete: function() {
+                        $message.find('.spinner').hide();
+                    }
+                });
+            }
+        });
+    });
+    </script>
+    <?php
+});
+
+// Fonction pour traiter l'annulation de réservation
+add_action('wp_ajax_st_partner_cancel_booking', function() {
+    try {
+        check_ajax_referer('st_frontend_security', 'security');
+
+        $post_id = STInput::post('post_id', '');
+        $order_id = STInput::post('order_id', '');
+        
+        error_log('ST Partner Cancel Booking - Post ID: ' . $post_id);
+        error_log('ST Partner Cancel Booking - Order ID: ' . $order_id);
+        
+        if ($order_id != '' && $post_id != '') {
+            $data_order = STUser_f::get_history_bookings_by_id($post_id);
+            error_log('ST Partner Cancel Booking - Data Order: ' . print_r($data_order, true));
+            
+            if (!empty($data_order)) {
+                // Vérifier si l'utilisateur est admin ou si c'est le partenaire propriétaire de l'activité
+                $item_id = $data_order->st_booking_id;
+                $is_admin = current_user_can('administrator');
+                $is_partner = in_array('partner', wp_get_current_user()->roles) || in_array('st_partner', wp_get_current_user()->roles);
+                $is_owner = get_post_field('post_author', $item_id) == get_current_user_id();
+
+                error_log('ST Partner Cancel Booking - Item ID: ' . $item_id);
+                error_log('ST Partner Cancel Booking - Is Admin: ' . ($is_admin ? 'true' : 'false'));
+                error_log('ST Partner Cancel Booking - Is Partner: ' . ($is_partner ? 'true' : 'false'));
+                error_log('ST Partner Cancel Booking - Is Owner: ' . ($is_owner ? 'true' : 'false'));
+
+                if (!$is_admin && !($is_partner && $is_owner)) {
+                    wp_send_json_error(array(
+                        'message' => __("You are not allowed to cancel this booking", 'traveler')
+                    ));
+                }
+
+                // Mettre à jour le statut en "cancelled"
+                $update_meta = update_post_meta($order_id, 'status', 'cancelled');
+                error_log('ST Partner Cancel Booking - Update Meta Result: ' . ($update_meta ? 'success' : 'failed'));
+                
+                // Mettre à jour la table st_order_item_meta
+                global $wpdb;
+                $table = $wpdb->prefix . 'st_order_item_meta';
+                $update_table = $wpdb->update(
+                    $table,
+                    array('status' => 'cancelled'),
+                    array('order_item_id' => $order_id)
+                );
+                error_log('ST Partner Cancel Booking - Update Table Result: ' . ($update_table !== false ? 'success' : 'failed'));
+                
+                // Si c'est une commande WooCommerce, mettre à jour son statut
+                $wc_order_id = $data_order->wc_order_id;
+                if (!empty($wc_order_id)) {
+                    try {
+                        $order = new WC_Order($wc_order_id);
+                        $order->update_status('cancelled');
+                        error_log('ST Partner Cancel Booking - WooCommerce Order Updated');
+                    } catch (Exception $e) {
+                        error_log('ST Partner Cancel Booking - WooCommerce Error: ' . $e->getMessage());
+                    }
+                }
+
+                // Mettre à jour le statut dans la table st_booking
+                $booking_table = $wpdb->prefix . 'st_booking';
+                $wpdb->update(
+                    $booking_table,
+                    array('status' => 'cancelled'),
+                    array('order_item_id' => $order_id)
+                );
+                
+                // Envoyer l'email de notification
+                try {
+                    STCart::send_mail_after_booking($order_id, true, true);
+                    error_log('ST Partner Cancel Booking - Email Sent');
+                } catch (Exception $e) {
+                    error_log('ST Partner Cancel Booking - Email Error: ' . $e->getMessage());
+                }
+                
+                wp_send_json_success(array(
+                    'message' => __('Booking cancelled successfully', 'traveler')
+                ));
+            }
+        }
+        
+        wp_send_json_error(array(
+            'message' => __('Booking not found', 'traveler')
+        ));
+    } catch (Exception $e) {
+        error_log('ST Partner Cancel Booking - Exception: ' . $e->getMessage());
+        wp_send_json_error(array(
+            'message' => __('An error occurred while cancelling the booking', 'traveler')
+        ));
+    }
+});
