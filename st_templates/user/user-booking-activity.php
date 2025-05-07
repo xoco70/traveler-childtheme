@@ -202,9 +202,10 @@ if (STInput::get('scaction') == 'email-notification') {
                         echo '<span class="suser-status"><span style="color: ' . esc_attr( $status_color ) . '">' . esc_html( $status_text ) . '</span></span>';
                         if (
                             ($status == 'incomplete' || $status == 'pending' || $status == 'wc-processing' || $status == 'wc-on-hold')
-                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles)
+                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles) // IA Changed it
                         ) {
                             ?>
+<!--                            <a data-post-id="--><?php //echo esc_attr($value->id); ?><!--" data-order-id="--><?php //echo esc_attr($value->order_item_id); ?><!--" href="#" class="suser-approve"> IA changed it....-->
                             <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#" class="suser-approve"><?php echo __('Approve', 'traveler'); ?> </a>
                             <div class="suser-message"><div class="spinner"></div></div>
                         <?php } ?>
