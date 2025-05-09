@@ -199,27 +199,17 @@ if (STInput::get('scaction') == 'email-notification') {
                                 $status_text = $status_string;
                         }
                         echo '<span class="suser-status"><span style="color: ' . esc_attr( $status_color ) . '">' . esc_html( $status_text ) . '</span></span>';
-                        
-//                        // Afficher le bouton d'approbation pour les réservations en attente
-//                        if (
-//                            ($status == 'incomplete' || $status == 'pending' || $status == 'wc-processing' || $status == 'wc-on-hold')
-//                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles)
-//                        ) {
-//                            ?>
-<!--                            <a data-post-id="--><?php //echo esc_attr($value->order_item_id); ?><!--" data-order-id="--><?php //echo esc_attr($value->order_item_id); ?><!--" href="#" class="suser-approve">--><?php //echo __('Approve', 'traveler'); ?><!-- </a>-->
-<!--                            <div class="suser-message"><div class="spinner"></div></div>-->
-<!--                        --><?php //}
 
-                        ?>
-                        
+                        // Afficher le bouton d'approbation pour les réservations en attente
+                        if (
+                            ($status == 'incomplete' || $status == 'pending' || $status == 'wc-processing' || $status == 'wc-on-hold')
+                            && array_intersect(['administrator', 'partner', 'st_partner'], wp_get_current_user()->roles)
+                        ) {
+                            ?>
+                            <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#" class="suser-approve"><?php echo __('Approve', 'traveler'); ?> </a>
+                            <div class="suser-message"><div class="spinner"></div></div>
+                        <?php } ?>
 
-                    </td>
-                    <td class="">
-                        <a data-toggle="modal" data-target="#info-booking-modal"
-                           class="btn btn-xs btn-primary mt5 btn-info-booking"
-                           data-service_id='<?php echo esc_html($item_id) ?>'
-                           data-order_id="<?php echo esc_html($post_id) ?>" href="javascript: void(0);"><i
-                                class="fa fa-info-circle"></i><?php _e('Details', 'traveler') ?></a>
                         <!-- Afficher le bouton d'annulation pour les réservations complétées -->
                         <?php
                         $item_id = $value->st_booking_id;
@@ -227,13 +217,22 @@ if (STInput::get('scaction') == 'email-notification') {
                         $is_partner = in_array('partner', wp_get_current_user()->roles) || in_array('st_partner', wp_get_current_user()->roles);
                         $is_owner = get_post_field('post_author', $item_id) == get_current_user_id();
 
+                         ?>
+                    </td>
+                    <td class="">
+                        <a data-toggle="modal" data-target="#info-booking-modal"
+                           class="btn btn-xs btn-primary mt5 btn-info-booking"
+                           data-service_id='<?php echo esc_html($item_id) ?>'
+                           data-order_id="<?php echo esc_html($post_id) ?>" href="javascript: void(0);"><i
+                                class="fa fa-info-circle"></i><?php _e('Details', 'traveler') ?></a>
+                        <?php
                         if (($is_admin || ($is_partner && $is_owner)) &&
                             ($status == 'complete' || $status == 'wc-completed') &&
                             $status != 'cancelled' &&
                             $status != 'wc-cancelled') {
                             ?>
-                            <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#"
-                               class="btn btn-xs cancel mt5 btn-info-booking"><i class="fa fa-times"></i><?php echo __('Cancel', 'traveler'); ?> </a>
+                            <a data-post-id="<?php echo esc_attr($value->order_item_id); ?>" data-order-id="<?php echo esc_attr($value->order_item_id); ?>" href="#" class="btn btn-xs btn-primary mt5 suser-cancel cancel btn-info-booking"><i
+                                        class="fa fa-info-circle"></i><?php echo __('Cancel', 'traveler'); ?> </a>
                         <?php } ?>
                     </td>
                     <?php do_action( 'export_booking_item_buttons', $value->order_item_id ); ?>

@@ -42,7 +42,6 @@ add_filter('st_partner_activity_info', function ($fields) {
     return $fields;
 }, 20, 1);
 
-// Dans functions.php de votre thème enfant
 add_filter('st_partner_activity_content', 'modify_partner_activity_content', 20, 1);
 
 function modify_partner_activity_content($content)
@@ -264,7 +263,7 @@ add_action('st_booking_change_status', function($status, $order_id, $gateway_id)
         $wpdb->query($query);
         
         // Envoyer l'email de confirmation
-        STCart::send_mail_after_booking($order_id, true, true);
+//        STCart::send_mail_after_booking($order_id, true, true);
     }
 }, 10, 3);
 
@@ -335,10 +334,10 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
                 $is_partner = in_array('partner', wp_get_current_user()->roles) || in_array('st_partner', wp_get_current_user()->roles);
                 $is_owner = get_post_field('post_author', $item_id) == get_current_user_id();
 
-                error_log('ST Partner Cancel Booking - Item ID: ' . $item_id);
-                error_log('ST Partner Cancel Booking - Is Admin: ' . ($is_admin ? 'true' : 'false'));
-                error_log('ST Partner Cancel Booking - Is Partner: ' . ($is_partner ? 'true' : 'false'));
-                error_log('ST Partner Cancel Booking - Is Owner: ' . ($is_owner ? 'true' : 'false'));
+//                error_log('ST Partner Cancel Booking - Item ID: ' . $item_id);
+//                error_log('ST Partner Cancel Booking - Is Admin: ' . ($is_admin ? 'true' : 'false'));
+//                error_log('ST Partner Cancel Booking - Is Partner: ' . ($is_partner ? 'true' : 'false'));
+//                error_log('ST Partner Cancel Booking - Is Owner: ' . ($is_owner ? 'true' : 'false'));
 
                 if (!$is_admin && !($is_partner && $is_owner)) {
                     wp_send_json_error(array(
@@ -348,7 +347,7 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
 
                 // Mettre à jour le statut en "cancelled"
                 $update_meta = update_post_meta($order_id, 'status', 'cancelled');
-                error_log('ST Partner Cancel Booking - Update Meta Result: ' . ($update_meta ? 'success' : 'failed'));
+//                error_log('ST Partner Cancel Booking - Update Meta Result: ' . ($update_meta ? 'success' : 'failed'));
                 
                 // Mettre à jour la table st_order_item_meta
                 global $wpdb;
@@ -358,7 +357,7 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
                     array('status' => 'cancelled'),
                     array('order_item_id' => $order_id)
                 );
-                error_log('ST Partner Cancel Booking - Update Table Result: ' . ($update_table !== false ? 'success' : 'failed'));
+//                error_log('ST Partner Cancel Booking - Update Table Result: ' . ($update_table !== false ? 'success' : 'failed'));
                 
                 // Si c'est une commande WooCommerce, mettre à jour son statut
                 $wc_order_id = $data_order->wc_order_id;
@@ -366,7 +365,7 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
                     try {
                         $order = new WC_Order($wc_order_id);
                         $order->update_status('cancelled');
-                        error_log('ST Partner Cancel Booking - WooCommerce Order Updated');
+//                        error_log('ST Partner Cancel Booking - WooCommerce Order Updated');
                     } catch (Exception $e) {
                         error_log('ST Partner Cancel Booking - WooCommerce Error: ' . $e->getMessage());
                     }
@@ -383,7 +382,7 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
                 // Envoyer l'email de notification
                 try {
                     STCart::send_mail_after_booking($order_id, true, true);
-                    error_log('ST Partner Cancel Booking - Email Sent');
+//                    error_log('ST Partner Cancel Booking - Email Sent');
                 } catch (Exception $e) {
                     error_log('ST Partner Cancel Booking - Email Error: ' . $e->getMessage());
                 }
