@@ -403,3 +403,37 @@ add_action('wp_ajax_st_partner_cancel_booking', function() {
         ));
     }
 });
+
+/**
+ * Récupère la liste des activités pour le widget Elementor
+ * @return array Liste des activités avec ID => Titre
+ */
+function st_child_get_activity_list() {
+    $activities = get_posts([
+        'post_type' => 'st_activity',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'title',
+        'order' => 'ASC'
+    ]);
+
+    $options = [];
+    foreach ($activities as $activity) {
+        $options[$activity->ID] = $activity->post_title;
+    }
+
+    return $options;
+}
+
+/**
+ * S'assure que les widgets du thème enfant sont chargés avant ceux du thème parent
+ */
+add_filter('st-list-element-widget', function($elements) {
+    // Vérifier si le widget list-service existe dans le thème enfant
+    $child_widget_path = get_stylesheet_directory() . '/st_templates/layouts/elementor/elements/list-service/settings.php';
+    if (file_exists($child_widget_path)) {
+        // Charger le widget du thème enfant
+        require_once $child_widget_path;
+    }
+    return $elements;
+}, 5);
