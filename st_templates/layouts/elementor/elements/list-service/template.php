@@ -174,6 +174,39 @@ if($list_style =='list' && $style_list == 'vertical'){
                         if(isset($custom_activities) && !empty($custom_activities)) {
                             $args['post__in'] = $custom_activities;
                         }
+                        // Filtrer par location si définie
+                        if(isset($locations) && !empty($locations)) {
+                            error_log(message: 'Locations: ' . print_r($locations, true));
+
+                            if(!empty($locations)) {
+                                global $wpdb;
+                                $location_ids = implode(',', array_values($locations));
+                                // error_log(message: 'Activities IDs: ' . print_r($custom_activities, true));
+                                
+                                // Convertir le tableau en liste d'IDs
+                                $custom_activities_ids = implode(',', array_values($custom_activities));
+                                
+                                $query = "
+                                    SELECT DISTINCT post_id 
+                                    FROM {$wpdb->prefix}st_location_relationships 
+                                    WHERE location_from IN ({$location_ids}) 
+                                    AND post_type = 'st_activity'
+                                    AND post_id IN ({$custom_activities_ids})";
+                                // error_log(message: 'Query: ' . $query);
+
+                                // Récupérer les activités liées via la table st_location_relationships
+                                $activity_ids = $wpdb->get_col($query);
+                                
+                                // error_log('Activity IDs found: ' . print_r($activity_ids, true));
+                                
+                                if(!empty($activity_ids)) {
+                                    $args['post__in'] = $activity_ids;
+                                    $args['orderby'] = 'post__in';
+                                } else {
+                                    $args['post__in'] = array(0);
+                                }
+                            }
+                        }
 
                         $current_lang = TravelHelper::current_lang();
                         $main_lang = TravelHelper::primary_lang();

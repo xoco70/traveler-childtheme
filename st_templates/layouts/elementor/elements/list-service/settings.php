@@ -237,6 +237,27 @@ if (!class_exists('ST_List_Service_Element')) {
                 ]
             );
             $this->add_control(
+                'locations',
+                [
+                    'label' => esc_html__( 'Filter by location', 'traveler' ),
+                    'description' => esc_html__('Choose custom location', 'traveler'),
+                    'type' => \Elementor\Controls_Manager::SELECT2,
+                    'multiple' => true,
+                    'options' => array_combine(
+                        array_map(function($location) {
+                            return $location->ID;
+                        }, TravelHelper::getListFullNameLocation()),
+                        array_map(function($location) {
+                            return $location->post_title;
+                        }, TravelHelper::getListFullNameLocation())
+                    ),
+                    'condition' => [
+                        'type_form' => 'single',
+                        'service' => 'st_activity'
+                    ]
+                ]
+            );
+            $this->add_control(
                 'custom_activities',
                 [
                     'label' => esc_html__( 'Filter by activity', 'traveler' ),
