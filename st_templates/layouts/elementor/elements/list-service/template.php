@@ -176,27 +176,28 @@ if($list_style =='list' && $style_list == 'vertical'){
                         }
                         // Filtrer par location si définie
                         if(isset($locations) && !empty($locations)) {
-                            error_log(message: 'Locations: ' . print_r($locations, true));
+                            // error_log(message: 'Locations: ' . print_r($locations, true));
 
                             if(!empty($locations)) {
                                 global $wpdb;
                                 $location_ids = implode(',', array_values($locations));
-                                // error_log(message: 'Activities IDs: ' . print_r($custom_activities, true));
-                                
-                                // Convertir le tableau en liste d'IDs
-                                $custom_activities_ids = implode(',', array_values($custom_activities));
                                 
                                 $query = "
                                     SELECT DISTINCT post_id 
                                     FROM {$wpdb->prefix}st_location_relationships 
                                     WHERE location_from IN ({$location_ids}) 
-                                    AND post_type = 'st_activity'
-                                    AND post_id IN ({$custom_activities_ids})";
-                                // error_log(message: 'Query: ' . $query);
+                                    AND post_type = 'st_activity'";
+
+                                // Ajouter la condition IN seulement si custom_activities n'est pas vide
+                                if(isset($custom_activities) && !empty($custom_activities)) {
+                                    $custom_activities_ids = implode(',', array_values($custom_activities));
+                                    // error_log(message: 'custom_activities_ids: ' . print_r($custom_activities_ids, true));
+                                    $query .= " AND post_id IN ({$custom_activities_ids})";
+                                }
+                                // error_log(message: 'Activities IDs: ' . print_r($custom_activities, true));
 
                                 // Récupérer les activités liées via la table st_location_relationships
                                 $activity_ids = $wpdb->get_col($query);
-                                
                                 // error_log('Activity IDs found: ' . print_r($activity_ids, true));
                                 
                                 if(!empty($activity_ids)) {
